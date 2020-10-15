@@ -40,9 +40,12 @@ class Deploy(K8sBaseDeploy):
         return task
 
     def get_deployment_templates(self, default_api=None, defualt_kind=None, default_strategy=None, engine_state=None):
+        strategy = {
+            'type': 'Rolling',
+        }
         return super(Deploy, self).get_deployment_templates(default_api='v1',
                                                             default_kind='deployment_config',
-                                                            default_strategy='Rolling',
+                                                            default_strategy=strategy,
                                                             engine_state=engine_state)
 
     def get_deployment_tasks(self, module_name=None, engine_state=None, tags=[]):
@@ -132,6 +135,7 @@ class Deploy(K8sBaseDeploy):
         for name, service_config in self._services.items():
             # Remove routes where state is 'absent'
             if service_config.get(self.CONFIG_KEY, {}).get('state', 'present') == 'absent':
+                task = CommentedMap()
                 task['name'] = 'Remove route'
                 task[module_name] = CommentedMap()
                 task[module_name]['state'] = 'absent'

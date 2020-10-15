@@ -1,5 +1,18 @@
-[![Build Status](https://travis-ci.org/ansible/ansible-container.svg?branch=develop)](https://travis-ci.org/ansible/ansible-container)
-[![Code Coverage](https://codecov.io/gh/ansible/ansible-container/coverage.svg)](https://codecov.io/gh/ansible/ansible-container)
+# Deprecated
+
+The ansible-container project is now officially deprecated. We will no longer be maintaining this repo or accepting any issues or pull requests.
+
+The ansible-container project did two things, broadly speaking: it built containers, and it deployed containers to Kubernetes. Now there are new successor projects that perform these tasks.
+
+For people who have been using ansible-container to build containers, we recommend using the ansible-bender project: https://github.com/ansible-community/ansible-bender
+
+For people who have been using ansible-container to deploy containers to Kubernetes, we recommend using Ansible Operators:
+
+https://learn.openshift.com/ansibleop/ansible-operator-overview/
+
+Thanks to all those who have used and contributed to ansible-container.
+
+# Original README below
 
 # Ansible Container
 
@@ -11,7 +24,7 @@ Use Ansible Container to manage the container lifecycle from development, throug
 
 * `ansible-container init`
 
-  Creates a directory *ansible* with files to get you started. Read the comments, and edit to suit your needs.
+  Creates files in the *current directory* to get you started. Read the comments, and edit to suit your needs.
 
 * `ansible-container install`
 
@@ -26,26 +39,22 @@ Use Ansible Container to manage the container lifecycle from development, throug
   Launches the containers specified in the orchestration document, *container.yml*, for testing the built images. The 
   format of *container.yml* is nearly identical to Docker Compose.
 
-* `ansible-container push`
+* `ansible-container deploy`
 
-  Pushes the project's container images to a registry of your choice.
-
-* `ansible-container shipit`
-
-  Generates a playbook and role capable of deploying the project on a supported cloud provider.
+  Pushes the project's container images to a registry of your choice, and generates a playbook capable of deploying the project on a supported cloud provider.
 
 ## Installing
 
 Install using *pip*, the Python package manager:
 
-    $ sudo pip install ansible-container
+    $ sudo pip install "ansible-container[docker,openshift]"
     
 Or, to install without root privileges, use [virtualenv](https://virtualenv.pypa.io/en/stable/) to first create a 
 Python sandbox:
     
     $ virtualenv ansible-container
     $ source ansible-container/bin/activate
-    $ pip install ansible-container
+    $ pip install "ansible-container[docker,openshift]"
 
 For more details, prerequisite, and instructions on installing the latest development release, please view our 
 [Installation Guide](https://docs.ansible.com/ansible-container/installation.html).

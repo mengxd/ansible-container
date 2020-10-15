@@ -2,12 +2,16 @@ import os
 import sys
 import shlex
 import shutil
+import distutils.cmd
+import distutils.log
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 from setuptools.command.sdist import sdist as SDistCommand
-from pip.req import parse_requirements
+try:
+    from pip._internal.req import parse_requirements
+except ImportError:
+    from pip.req import parse_requirements
 import container
-
 
 class PlaybookAsTests(TestCommand):
     user_options = [('ansible-args=', None, "Extra ansible arguments")]
@@ -44,27 +48,62 @@ class BundleConductorFiles(SDistCommand):
                         'container/docker/files/conductor-requirements.yml')
         return SDistCommand.run(self)
 
+class PrebakeConductors(distutils.cmd.Command):
+    description = 'Pre-bake Conductor base images'
+    user_options = [
+        # The format is (long option, short option, description).
+        ('debug', None, 'Enable debug output'),
+        ('no-cache', None, 'Cache me offline, how bout dat?'),
+        ('ignore-errors', None, 'Ignore build failures and continue building other distros'),
+        ('distros=', None, 'Only pre-bake certain supported distros. Comma-separated.'),
+        ('conductor-provider=', None, 'Possibility to specify custom provider, default ansible')
+    ]
+
+    def initialize_options(self):
+        """Set default values for options."""
+        # Each user option must be listed here with their default value.
+        self.debug = False
+        self.ignore_errors = False
+        self.distros = ''
+        self.conductor_provider = 'ansible'
+
+    def finalize_options(self):
+        self.distros = self.distros.strip().split(',') if self.distros else []
+        self.cache = not getattr(self, 'no_cache', False)
+
+    def run(self):
+        """Run command."""
+        from container.cli import LOGGING
+        from logging import config
+        from container import core
+        if self.debug:
+            LOGGING['loggers']['container']['level'] = 'DEBUG'
+        config.dictConfig(LOGGING)
+        core.hostcmd_prebake(self.distros, debug=self.debug, cache=self.cache,
+                             ignore_errors=self.ignore_errors, conductor_provider=self.conductor_provider)
+
 if container.ENV == 'host':
     install_reqs = parse_requirements('requirements.txt', session=False)
     setup_kwargs = dict(
         install_requires=[str(ir.req) for ir in install_reqs if ir.match_markers()],
         tests_require=[
-            'ansible==2.4.0',
+            'ansible>=2.3.0',
             'pytest>=3',
-            'docker>=2.1',
+            'docker>=2.4.0,<3.0',
             'jmespath>=0.9'
         ],
         extras_require={
-            'docker': ['docker>=2.1'],
+            'docker': ['docker>=2.4.0,<3.0'],
             'docbuild': ['Sphinx>=1.5.0'],
-            'openshift': ['openshift==0.0.1'],
-            'k8s': ['openshift==0.0.1']
+            'openshift': ['openshift==0.3.4'],
+            'k8s': ['openshift==0.3.4']
         },
-        dependency_links=[
-            'https://github.com/ansible/ansible/archive/devel.tar.gz#egg=ansible-2.4.0',
-        ],
+        #dependency_links=[
+        #    'https://github.com/ansible/ansible/archive/devel.tar.gz#egg=ansible-2.4.0',
+        #],
         cmdclass={'test': PlaybookAsTests,
-                  'sdist': BundleConductorFiles},
+                  'sdist': BundleConductorFiles,
+                  'prebake': PrebakeConductors},
         entry_points={
             'console_scripts': [
                 'ansible-container = container.cli:host_commandline']
